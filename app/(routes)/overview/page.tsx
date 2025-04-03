@@ -1,32 +1,18 @@
 "use client";
 
-import { ReactNode, useRef, useState } from "react";
+import React, { ReactNode, useRef, useState } from "react";
 import { useActions } from "ai/rsc";
 import { Message } from "@/components/message";
 import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { VercelIcon } from "@/components/icons";
 
 export default function Home() {
+  const { sendMessage } = useActions();
   const [input, setInput] = useState<string>("");
   const [messages, setMessages] = useState<Array<ReactNode>>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [messagesContainerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>();
-  const actions = useActions();
-
-  if (!actions) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Loading...</h1>
-          <p className="text-gray-500">Please wait while we initialize the AI system.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const { sendMessage } = actions;
 
   const suggestedActions = [
     { 
@@ -50,32 +36,6 @@ export default function Home() {
       action: "generateBlog:Create a detailed comparison of different AI SDKs available for React applications. Compare Vercel AI SDK, LangChain, Hugging Face, and others. Include code examples, features, limitations, and use cases."
     },
   ];
-
-  const handleMessage = async (content: string) => {
-    setIsLoading(true);
-    try {
-      setMessages((messages) => [
-        ...messages,
-        <Message key={messages.length} role="user" content={content} />,
-      ]);
-      setInput("");
-
-      const response: ReactNode = await sendMessage(content);
-      setMessages((messages) => [...messages, response]);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setMessages((messages) => [
-        ...messages,
-        <Message 
-          key={messages.length} 
-          role="assistant" 
-          content="Sorry, there was an error processing your request. Please try again." 
-        />,
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="flex flex-row justify-center pb-20 h-dvh bg-white dark:bg-zinc-900">
@@ -101,12 +61,6 @@ export default function Home() {
             </motion.div>
           )}
           {messages.map((message) => message)}
-          {isLoading && (
-            <Message 
-              role="assistant" 
-              content="Generating your blog post..." 
-            />
-          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -121,9 +75,15 @@ export default function Home() {
                 className={index > 1 ? "hidden sm:block" : "block"}
               >
                 <button
-                  onClick={() => handleMessage(action.action)}
-                  disabled={isLoading}
-                  className="w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={async () => {
+                    setMessages((messages) => [
+                      ...messages,
+                      <Message key={messages.length} role="user" content={action.action} />,
+                    ]);
+                    const response: ReactNode = await sendMessage(action.action);
+                    setMessages((messages) => [...messages, response]);
+                  }}
+                  className="w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col"
                 >
                   <span className="font-medium">{action.title}</span>
                   <span className="text-zinc-500 dark:text-zinc-400">
@@ -138,19 +98,26 @@ export default function Home() {
           className="flex flex-col gap-2 relative items-center"
           onSubmit={async (event) => {
             event.preventDefault();
-            if (!input.trim() || isLoading) return;
-            await handleMessage(input);
+            if (!input.trim()) return;
+
+            setMessages((messages,) => [
+              ...messages,
+              <Message key={messages.length} role="user" content={input} />,
+            ]);
+            setInput("");
+
+            const response: ReactNode = await sendMessage(input);
+            setMessages((messages) => [...messages, response]);
           }}
         >
           <input
             ref={inputRef}
-            className="bg-zinc-100 rounded-md px-2 py-1.5 w-full outline-none dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300 md:max-w-[500px] max-w-[calc(100dvw-32px)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-zinc-100 rounded-md px-2 py-1.5 w-full outline-none dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300 md:max-w-[500px] max-w-[calc(100dvw-32px)]"
             placeholder="Describe what you want to write about..."
             value={input}
             onChange={(event) => {
               setInput(event.target.value);
             }}
-            disabled={isLoading}
           />
         </form>
       </div>

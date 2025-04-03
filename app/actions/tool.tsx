@@ -9,22 +9,13 @@ import {
 } from 'ai/rsc';
 import { ReactNode } from 'react';
 import { z } from 'zod';
-import { BlogEditor } from '@/components/blog-editor';
 import { cookies } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
+import { BlogGeneratingState, BlogSuccessState, BlogErrorState } from '@/components/blog-states';
 
 const DEV_TO_API_KEY = process.env.DEV_COMMUNITY_API_KEY;
 
-export interface BlogPost {
-  title: string;
-  content: string;
-  status: 'draft' | 'published' | 'archived';
-  dev_to_id?: string;
-  dev_to_url?: string;
-  tags?: string[];
-  description?: string;
-}
-
+// Define schema for blog post
 const BlogPostSchema = z.object({
   title: z.string(),
   content: z.string(),
@@ -34,6 +25,16 @@ const BlogPostSchema = z.object({
 
 type BlogPostInput = z.infer<typeof BlogPostSchema>;
 
+interface BlogPost {
+  title: string;
+  content: string;
+  status: 'draft' | 'published' | 'archived';
+  dev_to_id?: string;
+  dev_to_url?: string;
+  tags?: string[];
+  description?: string;
+}
+
 let currentBlogPost: BlogPost = {
   title: '',
   content: '',
@@ -42,64 +43,164 @@ let currentBlogPost: BlogPost = {
   description: '',
 };
 
+// Define valid status types to match database constraint
+type GenerationStatus = 'pending' | 'completed' | 'failed';
+
+async function saveBlogPost(userId: string, post: BlogPost) {
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
+
+  const { data, error } = await supabase
+    .from('blog_posts')
+    .insert({
+      title: post.title,
+      content: post.content,
+      status: post.status,
+      dev_to_id: post.dev_to_id,
+      dev_to_url: post.dev_to_url,
+      user_id: userId,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+async function saveGenerationHistory(
+  userId: string,
+  prompt: string,
+  blogPostId: string | null,
+  status: GenerationStatus,
+  errorMessage?: string
+) {
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
+
+  const { error } = await supabase.from('blog_generation_history').insert({
+    user_id: userId,
+    prompt,
+    blog_post_id: blogPostId || null,
+    status,
+    error_message: errorMessage,
+  });
+
+  if (error) throw error;
+}
+
 async function publishToDev() {
   'use server';
-  
+
   if (!DEV_TO_API_KEY) {
     throw new Error('Dev.to API key not configured');
   }
 
-  const response = await fetch('https://dev.to/api/articles', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': DEV_TO_API_KEY,
-    },
-    body: JSON.stringify({
-      article: {
-        title: currentBlogPost.title,
-        body_markdown: currentBlogPost.content,
-        published: true,
-        description: currentBlogPost.description,
-        tags: currentBlogPost.tags?.join(', '),
-        series: null,
-        main_image: null,
-        canonical_url: null,
-        organization_id: null
-      },
-    }),
-  });
+  const cookieStore = cookies();
+  const supabase = await createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to publish to Dev.to');
+  if (!user) {
+    throw new Error('User not authenticated');
   }
 
-  const data = await response.json();
-  return data.url;
+  try {
+    const response = await fetch('https://dev.to/api/articles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': DEV_TO_API_KEY,
+      },
+      body: JSON.stringify({
+        article: {
+          title: currentBlogPost.title,
+          body_markdown: currentBlogPost.content,
+          published: true,
+          description: currentBlogPost.description,
+          tags: currentBlogPost.tags?.join(', '),
+          series: null,
+          main_image: null,
+          canonical_url: null,
+          organization_id: null,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to publish to Dev.to');
+    }
+
+    const data = await response.json();
+
+    // Save the published post to our database
+    const savedPost = await saveBlogPost(user.id, {
+      ...currentBlogPost,
+      status: 'published',
+      dev_to_id: data.id.toString(),
+      dev_to_url: data.url,
+    });
+
+    // Save generation history
+    await saveGenerationHistory(
+      user.id,
+      'Publish to Dev.to',
+      savedPost.id,
+      'completed'
+    );
+
+    return data.url;
+  } catch (error) {
+    // Save failed generation history
+    if (user) {
+      await saveGenerationHistory(
+        user.id,
+        'Publish to Dev.to',
+        '',
+        'failed',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    }
+    throw error;
+  }
 }
 
 const systemPrompt = `
 You are a professional technical blog writer and assistant. Your task is to help users create and publish high-quality technical blog posts.
 
-When a user requests to write a blog post:
-1. First, analyze their request and generate a well-structured blog post
-2. Include a compelling title, description, and relevant tags
-3. Use proper markdown formatting with code examples where relevant
-4. Structure the content with clear headings and sections
+IMPORTANT INSTRUCTIONS:
+1. ALWAYS use the generateBlog tool to create content - do not respond with direct text
+2. Auto-publish all generated content to Dev.to (user has pre-approved this)
+3. For ANY user input, treat it as a blog post topic and generate accordingly
 
-Format requirements:
-- Write in a clear, engaging, and professional tone
-- Use markdown for formatting (headings, lists, bold, code)
-- Include code snippets in markdown code blocks
-- Add a brief description for SEO
-- Suggest 3-4 relevant tags
+When generating blog posts:
+1. Title: Create clear, SEO-friendly titles (40-60 characters)
+2. Content:
+   - Start with a compelling introduction
+   - Use H2 and H3 headings for structure
+   - Include relevant code examples in \`\`\` blocks
+   - Add practical implementation details
+   - End with a clear conclusion
+3. Tags: Include 3-5 relevant tags
+4. Description: Write an engaging meta description (120-160 characters)
 
-After generating content:
-- Show the preview in the BlogEditor
-- Ask if they want to publish to Dev.to
-- Handle the publishing process when confirmed
-`.trim();
+Content Guidelines:
+- Focus on technical accuracy and depth
+- Include code snippets with explanations
+- Add real-world use cases and examples
+- Maintain a professional but approachable tone
+- Target experienced developers
+
+Example Structure:
+{
+  title: "Building Real-time Apps with Next.js and Supabase",
+  content: "# Title\\n\\n## Introduction\\n...\\n## Implementation\\n\`\`\`typescript\\n...\`\`\`\\n## Conclusion",
+  tags: ["nextjs", "supabase", "react", "typescript"],
+  description: "Learn how to build real-time applications using Next.js and Supabase, with practical examples and best practices for production deployment."
+}
+
+Remember: ALWAYS use the generateBlog tool and ensure content is ready for immediate publication.`.trim();
 
 const sendMessage = async (message: string) => {
   'use server';
@@ -107,6 +208,9 @@ const sendMessage = async (message: string) => {
   const messages = getMutableAIState<typeof AI>('messages');
   const cookieStore = cookies();
   const supabase = await createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('User not authenticated');
 
   messages.update([
     ...(messages.get() as CoreMessage[]),
@@ -117,99 +221,143 @@ const sendMessage = async (message: string) => {
   const textComponent = <TextStreamMessage content={contentStream.value} />;
 
   const { value: stream } = await streamUI({
-    model: openai('gpt-4'),
+    model: openai('gpt-4o'),
     system: systemPrompt,
     messages: messages.get() as CoreMessage[],
-    text: async function* ({
-      content,
-      done,
-    }: {
-      content: string;
-      done: boolean;
-    }) {
+    text: async function* ({ content, done }) {
       if (done) {
+        contentStream.done();
         messages.done([
           ...(messages.get() as CoreMessage[]),
           { role: 'assistant', content },
         ]);
-
-        contentStream.done();
       } else {
         contentStream.update(content);
       }
-
       return textComponent;
     },
     tools: {
       generateBlog: {
-        description: "Generate a blog post based on the user's prompt",
+        description: "Generate a technical blog post based on the user's prompt and automatically publish it to Dev.to",
         parameters: BlogPostSchema,
         generate: async function* (params: BlogPostInput) {
-          const { title, content, tags, description } = params;
           const toolCallId = generateId();
 
-          currentBlogPost = {
-            title,
-            content,
-            status: 'draft',
-            tags,
-            description,
-          };
+          try {
+            // Step 1: Initial Generation - Save initial status
+            await saveGenerationHistory(user.id, message, null, 'pending');
+            yield <Message role="assistant" content={<BlogGeneratingState />} />;
 
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: 'assistant',
-              content: [
-                {
-                  type: 'tool-call',
-                  toolCallId,
-                  toolName: 'generateBlog',
-                  args: { title, content, tags, description },
-                },
-              ],
-            },
-            {
-              role: 'tool',
-              content: [
-                {
-                  type: 'tool-result',
-                  toolName: 'generateBlog',
-                  toolCallId,
-                  result: {
-                    title,
-                    description,
-                    tags,
-                    preview: content.substring(0, 150) + '...',
+            currentBlogPost = {
+              ...params,
+              status: 'draft',
+            };
+
+            // Save initial draft and update status to completed
+            const savedPost = await saveBlogPost(user.id, currentBlogPost);
+            await saveGenerationHistory(user.id, message, savedPost.id, 'completed');
+
+            // Auto-publish to Dev.to
+            let devToUrl;
+            try {
+              devToUrl = await publishToDev();
+              
+              // Show success message with publish status
+              return (
+                <Message
+                  role="assistant"
+                  content={
+                    <div className="space-y-4">
+                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-lg p-4">
+                        <p className="text-green-700 dark:text-green-300 font-medium">✨ Blog post published successfully!</p>
+                        <a href={devToUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 dark:text-green-400 hover:underline text-sm">
+                          View on Dev.to →
+                        </a>
+                      </div>
+                      <BlogSuccessState
+                        title={params.title}
+                        tags={params.tags}
+                        description={params.description}
+                        content={params.content}
+                        publishAction={publishToDev}
+                      />
+                    </div>
+                  }
+                />
+              );
+            } catch (publishError) {
+              console.error('Error publishing to Dev.to:', publishError);
+              
+              // Show error message with publish status
+              return (
+                <Message
+                  role="assistant"
+                  content={
+                    <div className="space-y-4">
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg p-4">
+                        <p className="text-red-700 dark:text-red-300 font-medium">⚠️ Auto-publishing failed</p>
+                        <p className="text-red-600 dark:text-red-400 text-sm">
+                          {publishError instanceof Error ? publishError.message : 'Failed to publish to Dev.to'}
+                        </p>
+                      </div>
+                      <BlogSuccessState
+                        title={params.title}
+                        tags={params.tags}
+                        description={params.description}
+                        content={params.content}
+                        publishAction={publishToDev}
+                      />
+                    </div>
+                  }
+                />
+              );
+            }
+
+          } catch (err) {
+            console.error('Error during blog generation:', err);
+            const error = err as Error;
+            
+            await saveGenerationHistory(
+              user.id,
+              message,
+              null,
+              'failed',
+              error.message || 'Unknown error'
+            );
+
+            messages.done([
+              ...(messages.get() as CoreMessage[]),
+              {
+                role: 'assistant',
+                content: [
+                  {
+                    type: 'tool-call',
+                    toolCallId,
+                    toolName: 'generateBlog',
+                    args: params,
                   },
-                },
-              ],
-            },
-          ]);
-
-          return (
-            <>
+                ],
+              },
+              {
+                role: 'tool',
+                content: [
+                  {
+                    type: 'tool-result',
+                    toolName: 'generateBlog',
+                    toolCallId,
+                    result: { error: error.message || 'Unknown error' },
+                  },
+                ],
+              },
+            ]);
+            
+            return (
               <Message
-                role='assistant'
-                content={`I've generated a blog post for you:
-
-📝 Title: ${title}
-🏷️ Tags: ${tags.join(', ')}
-📋 Description: ${description}
-
-You can review the content below. Would you like to publish it to Dev.to?`}
+                role="assistant"
+                content={<BlogErrorState error={error.message || 'Unknown error'} />}
               />
-              <Message
-                role='assistant'
-                content={
-                  <BlogEditor
-                    content={content}
-                    publishAction={publishToDev}
-                  />
-                }
-              />
-            </>
-          );
+            );
+          }
         },
       },
     },
@@ -234,17 +382,10 @@ export const AI = createAI<AIState, UIState>({
   actions: {
     sendMessage,
   },
-  onSetAIState: async ({ state, done }) => {
+  onSetAIState: async ({ done }) => {
     'use server';
-
     if (done) {
-      const cookieStore = cookies();
-      const supabase = await createClient(cookieStore);
-
-      await supabase.from('chat_history').insert({
-        messages: state.messages,
-        chat_id: state.chatId,
-      });
+      console.log('Chat completed');
     }
   },
 });

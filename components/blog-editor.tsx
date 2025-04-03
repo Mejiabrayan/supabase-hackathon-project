@@ -2,14 +2,13 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 
-export interface BlogEditorProps {
+export interface BlogPreviewProps {
   content: string;
   publishAction: () => Promise<string>;
 }
 
-export function BlogEditor({ content, publishAction }: BlogEditorProps) {
+export function BlogPreview({ content, publishAction }: BlogPreviewProps) {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,17 +28,18 @@ export function BlogEditor({ content, publishAction }: BlogEditorProps) {
 
   return (
     <div className="space-y-4">
-      <Textarea
-        value={content}
-        readOnly
-        className="min-h-[200px] font-mono text-sm"
-      />
+      <div className="prose prose-invert max-w-none">
+        <div className="bg-zinc-900 rounded-lg p-4 font-mono text-sm whitespace-pre-wrap">
+          {content}
+        </div>
+      </div>
       <div className="flex items-center gap-4">
         <Button 
           onClick={handlePublish}
-          disabled={isPublishing}
+          disabled={isPublishing || publishedUrl !== null}
+          className={publishedUrl ? 'bg-green-600 hover:bg-green-700' : ''}
         >
-          {isPublishing ? 'Publishing...' : 'Publish to Dev.to'}
+          {isPublishing ? 'Publishing...' : publishedUrl ? 'Published ✨' : 'Publish to Dev.to'}
         </Button>
         {error && (
           <p className="text-sm text-red-500">{error}</p>
@@ -51,7 +51,7 @@ export function BlogEditor({ content, publishAction }: BlogEditorProps) {
             rel="noopener noreferrer"
             className="text-sm text-blue-500 hover:underline"
           >
-            View published post →
+            View on Dev.to →
           </a>
         )}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { BotIcon, UserIcon } from "./icons";
 import { ReactNode } from "react";
 import { StreamableValue, useStreamableValue } from "ai/rsc";
