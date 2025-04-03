@@ -5,7 +5,6 @@ import { useActions } from "ai/rsc";
 import { Message } from "@/components/message";
 import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "motion/react";
-import { VercelIcon } from "@/components/icons";
 
 export default function Home() {
   const { sendMessage } = useActions();
@@ -38,88 +37,112 @@ export default function Home() {
   ];
 
   return (
-    <div className="flex flex-row justify-center pb-20 h-dvh bg-white dark:bg-zinc-900">
-      <div className="flex flex-col justify-between gap-4">
-        <div
-          ref={messagesContainerRef}
-          className="flex flex-col gap-3 h-full w-dvw items-center overflow-y-scroll"
-        >
-          {messages.length === 0 && (
-            <motion.div className="h-[350px] px-4 w-full md:w-[500px] md:px-0 pt-20">
-              <div className="border rounded-lg p-6 flex flex-col gap-4 text-zinc-500 text-sm dark:text-zinc-400 dark:border-zinc-700">
-                <p className="flex flex-row justify-center gap-4 items-center text-zinc-900 dark:text-zinc-50">
-                  <VercelIcon size={16} />
-                  <span>AI Blog Generator</span>
-                </p>
-                <p>
+    <div className="flex flex-col min-h-screen relative">
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 pointer-events-none"
+        style={{ 
+          backgroundImage: 'url("/3d-gradient.png")',
+          filter: 'blur(10px) brightness(1)',
+          transform: 'scale(1.1)',
+          maskImage: 'radial-gradient(circle at center, black, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(circle at center, black, transparent 80%)'
+        }}
+      />
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 flex flex-col gap-3 items-center p-4 relative z-10"
+      >
+        {messages.length === 0 && (
+          <motion.div 
+            className="w-full max-w-4xl pt-20"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="relative p-8 rounded-lg overflow-hidden">
+              <div className="absolute inset-0 bg-black/30 backdrop-blur-sm ring-1 ring-white/10" />
+              <div className="relative">
+                <h2 className="text-2xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 text-center mb-6">
+                  Create New Blog Post
+                </h2>
+                <p className="text-white/60 text-center mb-4">
                   Generate high-quality technical blog posts using AI. Simply describe what you want to write about, and our AI will help you create engaging content.
                 </p>
-                <p>
+                <p className="text-white/60 text-center">
                   Once generated, you can preview, edit, and publish directly to Dev.to with a single click.
                 </p>
               </div>
-            </motion.div>
-          )}
-          {messages.map((message) => message)}
-          <div ref={messagesEndRef} />
-        </div>
+            </div>
+          </motion.div>
+        )}
+        {messages.map((message) => message)}
+        <div ref={messagesEndRef} />
+      </div>
 
-        <div className="grid sm:grid-cols-2 gap-2 w-full px-4 md:px-0 mx-auto md:max-w-[500px] mb-4">
-          {messages.length === 0 &&
-            suggestedActions.map((action, index) => (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.01 * index }}
-                key={index}
-                className={index > 1 ? "hidden sm:block" : "block"}
-              >
-                <button
-                  onClick={async () => {
-                    setMessages((messages) => [
-                      ...messages,
-                      <Message key={messages.length} role="user" content={action.action} />,
-                    ]);
-                    const response: ReactNode = await sendMessage(action.action);
-                    setMessages((messages) => [...messages, response]);
-                  }}
-                  className="w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col"
+      <div className="w-full p-4 relative z-10">
+        <div className="w-full max-w-4xl mx-auto space-y-6">
+          <div className="grid sm:grid-cols-2 gap-3">
+            {messages.length === 0 &&
+              suggestedActions.map((action, index) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * index }}
+                  key={index}
+                  className={index > 1 ? "hidden sm:block" : "block"}
                 >
-                  <span className="font-medium">{action.title}</span>
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    {action.label}
-                  </span>
-                </button>
-              </motion.div>
-            ))}
-        </div>
+                  <button
+                    onClick={async () => {
+                      setMessages((messages) => [
+                        ...messages,
+                        <Message key={messages.length} role="user" content={action.action} />,
+                      ]);
+                      const response: ReactNode = await sendMessage(action.action);
+                      setMessages((messages) => [...messages, response]);
+                    }}
+                    className="w-full text-left relative p-4 rounded-lg overflow-hidden group transition-all duration-300 hover:scale-[1.02]"
+                  >
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm ring-1 ring-white/10 group-hover:ring-white/20" />
+                    <div className="relative">
+                      <span className="font-medium text-white block mb-1">{action.title}</span>
+                      <span className="text-white/60">
+                        {action.label}
+                      </span>
+                    </div>
+                  </button>
+                </motion.div>
+              ))}
+          </div>
 
-        <form
-          className="flex flex-col gap-2 relative items-center"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            if (!input.trim()) return;
+          <form
+            className="flex flex-col gap-2 relative items-center"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (!input.trim()) return;
 
-            setMessages((messages,) => [
-              ...messages,
-              <Message key={messages.length} role="user" content={input} />,
-            ]);
-            setInput("");
+              setMessages((messages) => [
+                ...messages,
+                <Message key={messages.length} role="user" content={input} />,
+              ]);
+              setInput("");
 
-            const response: ReactNode = await sendMessage(input);
-            setMessages((messages) => [...messages, response]);
-          }}
-        >
-          <input
-            ref={inputRef}
-            className="bg-zinc-100 rounded-md px-2 py-1.5 w-full outline-none dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300 md:max-w-[500px] max-w-[calc(100dvw-32px)]"
-            placeholder="Describe what you want to write about..."
-            value={input}
-            onChange={(event) => {
-              setInput(event.target.value);
+              const response: ReactNode = await sendMessage(input);
+              setMessages((messages) => [...messages, response]);
             }}
-          />
-        </form>
+          >
+            <div className="relative w-full">
+              <input
+                ref={inputRef}
+                className="w-full bg-black/40 backdrop-blur-sm ring-1 ring-white/10 rounded-lg px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:ring-white/20 transition-all"
+                placeholder="Describe what you want to write about..."
+                value={input}
+                onChange={(event) => {
+                  setInput(event.target.value);
+                }}
+              />
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

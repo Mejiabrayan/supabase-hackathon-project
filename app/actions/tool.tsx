@@ -221,7 +221,7 @@ const sendMessage = async (message: string) => {
   const textComponent = <TextStreamMessage content={contentStream.value} />;
 
   const { value: stream } = await streamUI({
-    model: openai('gpt-4o'),
+    model: openai('gpt-4o-mini-2024-07-18'),
     system: systemPrompt,
     messages: messages.get() as CoreMessage[],
     text: async function* ({ content, done }) {
@@ -267,21 +267,13 @@ const sendMessage = async (message: string) => {
                 <Message
                   role="assistant"
                   content={
-                    <div className="space-y-4">
-                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-lg p-4">
-                        <p className="text-green-700 dark:text-green-300 font-medium">✨ Blog post published successfully!</p>
-                        <a href={devToUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 dark:text-green-400 hover:underline text-sm">
-                          View on Dev.to →
-                        </a>
-                      </div>
-                      <BlogSuccessState
-                        title={params.title}
-                        tags={params.tags}
-                        description={params.description}
-                        content={params.content}
-                        publishAction={publishToDev}
-                      />
-                    </div>
+                    <BlogSuccessState
+                      title={params.title}
+                      tags={params.tags}
+                      description={params.description}
+                      content={params.content}
+                      publishAction={publishToDev}
+                    />
                   }
                 />
               );

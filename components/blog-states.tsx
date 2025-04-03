@@ -4,9 +4,12 @@ import { BlogPreview } from '@/components/blog-editor';
 
 export function BlogGeneratingState() {
   return (
-    <div className="flex items-center gap-2">
-      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-zinc-500"></div>
-      <span>Generating your blog post...</span>
+    <div className="relative p-6 rounded-lg overflow-hidden">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm ring-1 ring-white/10" />
+      <div className="relative flex items-center gap-3">
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white/80"></div>
+        <span className="text-white/80 font-medium">Crafting your blog post with AI magic ✨</span>
+      </div>
     </div>
   );
 }
@@ -21,17 +24,44 @@ interface BlogSuccessStateProps {
 
 export function BlogSuccessState({ title, tags, description, content, publishAction }: BlogSuccessStateProps) {
   return (
-    <>
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold mb-2">✅ Blog post generated successfully!</h2>
-        <div className="space-y-1 text-sm">
-          <p><span className="font-medium">📝 Title:</span> {title}</p>
-          <p><span className="font-medium">🏷️ Tags:</span> {tags.join(', ')}</p>
-          <p><span className="font-medium">📋 Description:</span> {description}</p>
+    <div className="relative p-6 rounded-lg overflow-hidden w-full max-w-4xl mx-auto">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm ring-1 ring-white/10" />
+      <div className="relative space-y-6">
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-2 w-2 rounded-full bg-green-500/80"></div>
+            <h2 className="text-xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+              Blog Post Generated
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="text-white/40 text-sm mb-1">Title</div>
+              <div className="text-white text-lg">{title}</div>
+            </div>
+
+            <div>
+              <div className="text-white/40 text-sm mb-2">Tags</div>
+              <div className="flex gap-2">
+                {tags.map((tag, i) => (
+                  <span key={i} className="px-2 py-0.5 rounded-full bg-white/5 text-white/70 text-sm">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-white/40 text-sm mb-1">Description</div>
+              <div className="text-white/70">{description}</div>
+            </div>
+          </div>
         </div>
+
+        <BlogPreview content={content} publishAction={publishAction} />
       </div>
-      <BlogPreview content={content} publishAction={publishAction} />
-    </>
+    </div>
   );
 }
 
@@ -41,11 +71,16 @@ interface BlogErrorStateProps {
 
 export function BlogErrorState({ error }: BlogErrorStateProps) {
   return (
-    <div className="text-red-500 flex items-center gap-2">
-      <span className="text-xl">❌</span>
-      <div>
-        <p className="font-medium">Error generating blog post:</p>
-        <p className="text-sm">{error}</p>
+    <div className="relative p-6 rounded-lg overflow-hidden">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm ring-1 ring-red-500/20" />
+      <div className="relative flex items-start gap-3">
+        <div className="h-6 w-6 rounded-full bg-red-500/10 flex items-center justify-center">
+          <span className="text-red-500">⚠️</span>
+        </div>
+        <div>
+          <h3 className="text-red-400 font-medium mb-1">Generation Failed</h3>
+          <p className="text-red-300/70 text-sm">{error}</p>
+        </div>
       </div>
     </div>
   );

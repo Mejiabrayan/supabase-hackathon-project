@@ -91,7 +91,7 @@ export function Form({
               type='email'
               placeholder='you@example.com'
               required
-              className='bg-black/50 border-white/10 text-white placeholder:text-gray-500 focus:border-white/20 focus:ring-white/5 h-12 active:ring-white/5 active:bg-transparent autofill:bg-black'
+              className='bg-black/50 border-white/10 text-white placeholder:text-gray-500 focus:border-white/20 focus:ring-white/5 h-12 active:ring-white/5 active:bg-transparent autofill:bg-black/50'
             />
           </div>
 
@@ -112,7 +112,7 @@ export function Form({
           <div className='pt-2'>
             <Button
               type='submit'
-              className='w-full bg-[rgba(255,255, 255, 0.03)] '
+              className='w-full bg-black/50 border-white/10 text-white placeholder:text-gray-500 focus:border-white/20 focus:ring-white/5 h-12 active:ring-white/5 active:bg-transparent autofill:bg-black/50 hover:bg-black/80'
               disabled={isLoading}
             >
               {isLoading ? loadingText : buttonText}

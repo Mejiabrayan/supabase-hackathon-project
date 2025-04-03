@@ -38,6 +38,11 @@ export default async function AuthLayout({ children }: AuthLayoutProps) {
 
       {/* Content layer */}
       <div className='relative z-10 flex flex-col items-center justify-center min-h-screen'>
+        
+        <div className="text-center mb-8 space-y-2">
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">DevGenius</h1>
+          <p className="text-white/60 text-lg">AI-powered blog posts, instantly published to Dev.to</p>
+        </div>
         {children}
       </div>
     </div>
