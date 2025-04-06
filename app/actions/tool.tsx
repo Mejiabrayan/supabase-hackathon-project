@@ -172,6 +172,7 @@ You are a professional technical blog writer and assistant. Your task is to help
 IMPORTANT INSTRUCTIONS:
 1. ALWAYS use the generateBlog tool to create content - do not respond with direct text
 2. For ANY user input, treat it as a blog post topic and generate accordingly
+3. ALWAYS format your response with ## Tags and ## Description sections at the end
 
 When generating blog posts:
 1. Title: Create clear, SEO-friendly titles (40-60 characters)
@@ -181,8 +182,8 @@ When generating blog posts:
    - Include relevant code examples in \`\`\` blocks
    - Add practical implementation details
    - End with a clear conclusion
-3. Tags: Include 3-5 relevant tags
-4. Description: Write an engaging meta description (120-160 characters)
+3. Tags: Include 3-5 relevant tags under ## Tags section
+4. Description: Write an engaging meta description under ## Description section (120-160 characters)
 
 Content Guidelines:
 - Focus on technical accuracy and depth
@@ -194,7 +195,7 @@ Content Guidelines:
 Example Structure:
 {
   title: "Building Real-time Apps with Next.js and Supabase",
-  content: "# Title\\n\\n## Introduction\\n...\\n## Implementation\\n\`\`\`typescript\\n...\`\`\`\\n## Conclusion",
+  content: "# Title\\n\\n## Introduction\\n...\\n## Implementation\\n\`\`\`typescript\\n...\`\`\`\\n## Conclusion\\n\\n## Tags\\nnextjs, supabase, react, typescript\\n\\n## Description\\nLearn how to build real-time applications using Next.js and Supabase.",
   tags: ["nextjs", "supabase", "react", "typescript"],
   description: "Learn how to build real-time applications using Next.js and Supabase, with practical examples and best practices for production deployment."
 }
@@ -244,12 +245,35 @@ const sendMessage = async (message: string) => {
           parameters: BlogPostSchema,
           generate: async function* (params: BlogPostInput) {
             try {
+              // Extract tags and description from content
+              const content = params.content;
+              let tags: string[] = [];
+              let description = '';
+
+              // Extract tags
+              const tagsMatch = content.match(/## Tags\n([\s\S]*?)(?=\n\n|$)/);
+              if (tagsMatch) {
+                tags = tagsMatch[1].split(',').map(tag => tag.trim());
+                // Remove the Tags section from content
+                params.content = content.replace(/## Tags[\s\S]*?(?=\n\n|$)/, '');
+              }
+
+              // Extract description
+              const descMatch = content.match(/## Description\n([\s\S]*?)(?=\n\n|$)/);
+              if (descMatch) {
+                description = descMatch[1].trim();
+                // Remove the Description section from content
+                params.content = content.replace(/## Description[\s\S]*?(?=\n\n|$)/, '');
+              }
+
               // Step 1: Initial Generation - Save initial status
               yield <Message role="assistant" content={<BlogGeneratingState />} />;
               await saveGenerationHistory(user.id, message, null, 'pending');
               
               currentBlogPost = {
                 ...params,
+                tags,
+                description,
                 status: 'draft',
               };
 
@@ -263,8 +287,8 @@ const sendMessage = async (message: string) => {
                   content={
                     <BlogSuccessState
                       title={params.title}
-                      tags={params.tags}
-                      description={params.description}
+                      tags={tags}
+                      description={description}
                       content={params.content}
                       publishAction={publishToDev}
                     />
