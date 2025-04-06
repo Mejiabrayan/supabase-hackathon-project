@@ -8,7 +8,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-
 } from '@/components/ui/sidebar';
 
 import { siteConfig } from '@/config/site';
@@ -29,7 +28,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size='lg' asChild>
-              <Link href='/'>
+              <Link href='/' prefetch={true}>
                 <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground'>
                   <GalleryVerticalEnd className='size-4' />
                 </div>
@@ -48,7 +47,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {siteConfig.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild>
-                  <Link href={item.href} className='font-medium'>
+                  <Link 
+                    href={item.href} 
+                    className='font-medium'
+                    prefetch={true}
+                  >
                     {item.icon &&
                       icons[item.icon as keyof typeof icons] &&
                       React.createElement(

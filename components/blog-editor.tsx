@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export interface BlogPreviewProps {
   publishAction: () => Promise<string>;
@@ -18,6 +19,14 @@ export function BlogPreview({ publishAction }: BlogPreviewProps) {
       setError(null);
       const url = await publishAction();
       setPublishedUrl(url);
+      toast.success('Blog post published successfully!', {
+        description: 'Your post is now live and ready to be shared',
+        action: {
+          label: 'View on Dev.to',
+          onClick: () => window.open(url, '_blank'),
+        },
+        duration: 5000,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to publish');
     } finally {
@@ -27,23 +36,6 @@ export function BlogPreview({ publishAction }: BlogPreviewProps) {
 
   return (
     <div className="space-y-4 w-full">
-      {publishedUrl && (
-        <div className="relative rounded-lg overflow-hidden bg-green-500/10 p-4">
-          <div className="absolute inset-0 backdrop-blur-sm ring-1 ring-green-500/20" />
-          <div className="relative flex items-center justify-between">
-            <p className="text-green-400 font-medium">✨ Blog post published successfully!</p>
-            <a 
-              href={publishedUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-green-400 hover:text-green-300 transition-colors text-sm"
-            >
-              View on Dev.to →
-            </a>
-          </div>
-        </div>
-      )}
-      
       <div className="flex items-center gap-4">
         <Button 
           onClick={handlePublish}

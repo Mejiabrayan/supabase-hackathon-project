@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -19,6 +20,7 @@ export default function Home() {
           fill
           className='object-cover'
           priority
+          draggable={false}
         />
       </div>
 
@@ -34,9 +36,10 @@ export default function Home() {
       </p>
 
       <div className='mt-4'>
-        <a
-          href='/overview'
+        <Link
+          href='/auth/sign-in'
           className='inline-flex items-center justify-center gap-2 shadow-md inset-shadow-sm inset-shadow-white/20 ring ring-blue-600 inset-ring inset-ring-white/15 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-sm font-normal tracking-wide px-6 py-2 rounded-lg hover:from-blue-600 hover:to-blue-400 transition-all'
+          prefetch={true}
         >
           Start writing
           <svg
@@ -52,7 +55,7 @@ export default function Home() {
               d='M9 5l7 7-7 7'
             />
           </svg>
-        </a>
+        </Link>
       </div>
     </div>
   );

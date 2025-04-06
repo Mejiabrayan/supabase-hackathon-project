@@ -266,14 +266,19 @@ const sendMessage = async (message: string) => {
                 params.content = content.replace(/## Description[\s\S]*?(?=\n\n|$)/, '');
               }
 
+              // Validate with Zod
+              const validatedData = BlogPostSchema.parse({
+                ...params,
+                tags,
+                description
+              });
+
               // Step 1: Initial Generation - Save initial status
               yield <Message role="assistant" content={<BlogGeneratingState />} />;
               await saveGenerationHistory(user.id, message, null, 'pending');
               
               currentBlogPost = {
-                ...params,
-                tags,
-                description,
+                ...validatedData,
                 status: 'draft',
               };
 
@@ -286,10 +291,10 @@ const sendMessage = async (message: string) => {
                   role="assistant"
                   content={
                     <BlogSuccessState
-                      title={params.title}
-                      tags={tags}
-                      description={description}
-                      content={params.content}
+                      title={validatedData.title}
+                      tags={validatedData.tags}
+                      description={validatedData.description}
+                      content={validatedData.content}
                       publishAction={publishToDev}
                     />
                   }
