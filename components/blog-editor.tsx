@@ -4,11 +4,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 export interface BlogPreviewProps {
-  content: string;
   publishAction: () => Promise<string>;
 }
 
-export function BlogPreview({ content, publishAction }: BlogPreviewProps) {
+export function BlogPreview({ publishAction }: BlogPreviewProps) {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,27 +43,12 @@ export function BlogPreview({ content, publishAction }: BlogPreviewProps) {
           </div>
         </div>
       )}
-
-      <div className="relative rounded-lg overflow-hidden">
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm ring-1 ring-white/10" />
-        <div className="relative p-4">
-          <div className="prose prose-invert max-w-none">
-            <div className="font-normal text-sm text-white/80 whitespace-pre-wrap max-h-[500px] overflow-y-auto">
-              {content}
-            </div>
-          </div>
-        </div>
-      </div>
       
       <div className="flex items-center gap-4">
         <Button 
           onClick={handlePublish}
           disabled={isPublishing || publishedUrl !== null}
-          className={`relative overflow-hidden ${
-            publishedUrl 
-              ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400' 
-              : 'bg-white/5 hover:bg-white/10 text-white'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
+          className="shadow-md inset-shadow-sm inset-shadow-white/20 ring ring-blue-600 inset-ring inset-ring-white/15 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-sm font-normal tracking-wide px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPublishing ? 'Publishing...' : publishedUrl ? 'Published ✨' : 'Publish to Dev.to'}
         </Button>

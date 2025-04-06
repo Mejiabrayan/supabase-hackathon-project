@@ -171,8 +171,7 @@ You are a professional technical blog writer and assistant. Your task is to help
 
 IMPORTANT INSTRUCTIONS:
 1. ALWAYS use the generateBlog tool to create content - do not respond with direct text
-2. Auto-publish all generated content to Dev.to (user has pre-approved this)
-3. For ANY user input, treat it as a blog post topic and generate accordingly
+2. For ANY user input, treat it as a blog post topic and generate accordingly
 
 When generating blog posts:
 1. Title: Create clear, SEO-friendly titles (40-60 characters)
@@ -200,7 +199,7 @@ Example Structure:
   description: "Learn how to build real-time applications using Next.js and Supabase, with practical examples and best practices for production deployment."
 }
 
-Remember: ALWAYS use the generateBlog tool and ensure content is ready for immediate publication.`.trim();
+Remember: ALWAYS use the generateBlog tool and ensure content is high quality and ready for review.`.trim();
 
 const sendMessage = async (message: string) => {
   'use server';
@@ -212,57 +211,55 @@ const sendMessage = async (message: string) => {
 
   if (!user) throw new Error('User not authenticated');
 
+  // Show loading state immediately
+  const loadingMessage = <Message role="assistant" content={<BlogGeneratingState />} />;
   messages.update([
     ...(messages.get() as CoreMessage[]),
     { role: 'user', content: message },
+    { role: 'assistant', content: 'Generating blog post...' }
   ]);
 
   const contentStream = createStreamableValue('');
   const textComponent = <TextStreamMessage content={contentStream.value} />;
 
-  const { value: stream } = await streamUI({
-    model: openai('gpt-4o-mini-2024-07-18'),
-    system: systemPrompt,
-    messages: messages.get() as CoreMessage[],
-    text: async function* ({ content, done }) {
-      if (done) {
-        contentStream.done();
-        messages.done([
-          ...(messages.get() as CoreMessage[]),
-          { role: 'assistant', content },
-        ]);
-      } else {
-        contentStream.update(content);
-      }
-      return textComponent;
-    },
-    tools: {
-      generateBlog: {
-        description: "Generate a technical blog post based on the user's prompt and automatically publish it to Dev.to",
-        parameters: BlogPostSchema,
-        generate: async function* (params: BlogPostInput) {
-          const toolCallId = generateId();
+  try {
+    const { value: stream } = await streamUI({
+      model: openai('gpt-4o-mini-2024-07-18'),
+      system: systemPrompt,
+      messages: messages.get() as CoreMessage[],
+      text: async function* ({ content, done }) {
+        if (done) {
+          contentStream.done();
+          messages.done([
+            ...(messages.get() as CoreMessage[]),
+            { role: 'assistant', content },
+          ]);
+        } else {
+          contentStream.update(content);
+        }
+        return textComponent;
+      },
+      tools: {
+        generateBlog: {
+          description: "Generate a SEO friendly blog post based on the user's prompt and automatically publish it to Dev.to",
+          parameters: BlogPostSchema,
+          generate: async function* (params: BlogPostInput) {
+            const toolCallId = generateId();
 
-          try {
-            // Step 1: Initial Generation - Save initial status
-            await saveGenerationHistory(user.id, message, null, 'pending');
-            yield <Message role="assistant" content={<BlogGeneratingState />} />;
-
-            currentBlogPost = {
-              ...params,
-              status: 'draft',
-            };
-
-            // Save initial draft and update status to completed
-            const savedPost = await saveBlogPost(user.id, currentBlogPost);
-            await saveGenerationHistory(user.id, message, savedPost.id, 'completed');
-
-            // Auto-publish to Dev.to
-            let devToUrl;
             try {
-              devToUrl = await publishToDev();
+              // Step 1: Initial Generation - Save initial status
+              await saveGenerationHistory(user.id, message, null, 'pending');
               
-              // Show success message with publish status
+              currentBlogPost = {
+                ...params,
+                status: 'draft',
+              };
+
+              // Save initial draft and update status to completed
+              const savedPost = await saveBlogPost(user.id, currentBlogPost);
+              await saveGenerationHistory(user.id, message, savedPost.id, 'completed');
+
+              // Return success state with publish button
               return (
                 <Message
                   role="assistant"
@@ -277,85 +274,35 @@ const sendMessage = async (message: string) => {
                   }
                 />
               );
-            } catch (publishError) {
-              console.error('Error publishing to Dev.to:', publishError);
+            } catch (err) {
+              console.error('Error during blog generation:', err);
+              const error = err as Error;
               
-              // Show error message with publish status
+              await saveGenerationHistory(
+                user.id,
+                message,
+                null,
+                'failed',
+                error.message || 'Unknown error'
+              );
+
               return (
-                <Message
+                <Message              
                   role="assistant"
-                  content={
-                    <div className="space-y-4">
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg p-4">
-                        <p className="text-red-700 dark:text-red-300 font-medium">⚠️ Auto-publishing failed</p>
-                        <p className="text-red-600 dark:text-red-400 text-sm">
-                          {publishError instanceof Error ? publishError.message : 'Failed to publish to Dev.to'}
-                        </p>
-                      </div>
-                      <BlogSuccessState
-                        title={params.title}
-                        tags={params.tags}
-                        description={params.description}
-                        content={params.content}
-                        publishAction={publishToDev}
-                      />
-                    </div>
-                  }
+                  content={<BlogErrorState error={error.message || 'Unknown error'} />}
                 />
               );
             }
-
-          } catch (err) {
-            console.error('Error during blog generation:', err);
-            const error = err as Error;
-            
-            await saveGenerationHistory(
-              user.id,
-              message,
-              null,
-              'failed',
-              error.message || 'Unknown error'
-            );
-
-            messages.done([
-              ...(messages.get() as CoreMessage[]),
-              {
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'tool-call',
-                    toolCallId,
-                    toolName: 'generateBlog',
-                    args: params,
-                  },
-                ],
-              },
-              {
-                role: 'tool',
-                content: [
-                  {
-                    type: 'tool-result',
-                    toolName: 'generateBlog',
-                    toolCallId,
-                    result: { error: error.message || 'Unknown error' },
-                  },
-                ],
-              },
-            ]);
-            
-            return (
-              <Message
-                role="assistant"
-                content={<BlogErrorState error={error.message || 'Unknown error'} />}
-              />
-            );
-          }
+          },
         },
       },
-    },
-  });
+    });
 
-  return stream;
+    return stream;
+  } catch (error) {
+    console.error('Error in sendMessage:', error);
+    return <Message role="assistant" content={<BlogErrorState error="Failed to generate blog post" />} />;
+  }
 };
 
 export type UIState = Array<ReactNode>;
