@@ -22,10 +22,9 @@ export function BlogList({ initialBlogs, error }: BlogListProps) {
 
   if (error) {
     return (
-      <div className="relative p-6 rounded-lg overflow-hidden">
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm ring-1 ring-red-500/20" />
-        <div className="relative flex items-center gap-3">
-          <span className="text-red-400">⚠️ Failed to load blog posts</span>
+      <div className="relative p-6 rounded-lg overflow-hidden bg-white shadow-[0_0_0_1px_rgba(220,38,38,0.1)] border-red-100">
+        <div className="flex items-center gap-3">
+          <span className="text-red-600">⚠️ Failed to load blog posts</span>
         </div>
       </div>
     );
@@ -33,13 +32,12 @@ export function BlogList({ initialBlogs, error }: BlogListProps) {
 
   if (!initialBlogs || initialBlogs.length === 0) {
     return (
-      <div className="relative p-6 rounded-lg overflow-hidden">
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm ring-1 ring-white/10" />
-        <div className="relative text-center">
-          <p className="text-white/60 mb-4">No published blog posts yet</p>
+      <div className="relative p-6 rounded-lg overflow-hidden bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
+        <div className="text-center">
+          <p className="text-neutral-500 mb-4">No published blog posts yet</p>
           <Link 
             href="/overview" 
-            className="text-white/80 hover:text-white underline"
+            className="text-blue-500 hover:text-blue-600 transition-colors"
           >
             Create your first blog post →
           </Link>
@@ -51,18 +49,17 @@ export function BlogList({ initialBlogs, error }: BlogListProps) {
   return (
     <div className="grid gap-4">
       {initialBlogs.map((blog) => (
-        <div key={blog.id} className="relative p-6 rounded-lg overflow-hidden transition-all duration-300 hover:scale-[1.01] group">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm ring-1 ring-white/10 group-hover:ring-white/20" />
+        <div key={blog.id} className="relative p-6 rounded-lg overflow-hidden bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_0_0_1px_rgba(0,0,0,0.12)] group">
           <div className="relative flex items-center justify-between">
             <Link 
               href={`/overview/published/${getSlug(blog.title)}`}
               className="flex-1 min-w-0"
             >
-              <h3 className="text-lg font-medium text-white mb-2 truncate pr-4">
+              <h3 className="text-lg font-medium text-neutral-700 mb-2 truncate pr-4">
                 {blog.title}
               </h3>
               <div className="flex items-center gap-4">
-                <p className="text-white/40 text-sm">
+                <p className="text-neutral-500 text-sm">
                   {new Date(blog.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
@@ -70,7 +67,7 @@ export function BlogList({ initialBlogs, error }: BlogListProps) {
                   })}
                 </p>
                 {blog.content && (
-                  <p className="text-white/40 text-sm">
+                  <p className="text-neutral-500 text-sm">
                     {blog.content.length} characters
                   </p>
                 )}
@@ -82,14 +79,14 @@ export function BlogList({ initialBlogs, error }: BlogListProps) {
                   href={blog.dev_to_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-white/60 hover:text-white text-sm transition-colors"
+                  className="text-blue-500 hover:text-blue-600 text-sm transition-colors"
                 >
                   View on Dev.to →
                 </a>
               )}
               <Link
                 href={`/overview/published/${getSlug(blog.title)}`}
-                className="text-white/60 group-hover:text-white text-sm transition-colors"
+                className="text-blue-500 group-hover:text-blue-600 text-sm transition-colors"
               >
                 Edit →
               </Link>

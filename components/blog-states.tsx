@@ -75,7 +75,7 @@ export function BlogSuccessState({ title, tags, description, content, publishAct
             <BlogPreview publishAction={publishAction} />
             <Link
               href={`/overview/published/${slug}`}
-              className="flex items-center justify-center gap-2 px-4 py-2 text-blue-500 hover:text-blue-600 font-medium transition-colors rounded-lg hover:bg-blue-50"
+              className="flex items-center text-sm font-normal justify-center gap-2 px-4 py-2 text-blue-500 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50"
             >
               View Post
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

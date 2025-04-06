@@ -4,7 +4,7 @@ import React, { ReactNode, useRef, useState, useEffect } from 'react';
 import { useActions, useUIState } from 'ai/rsc';
 import { Message } from '@/components/message';
 import { useScrollToBottom } from '@/components/use-scroll-to-bottom';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { suggestedActions } from '@/config/suggestions';
 import EmptyStateUI from '@/components/empty-state';
 import { BlogGeneratingState } from '@/components/blog-states';
@@ -19,9 +19,11 @@ export default function Home() {
 
   // Cleanup streaming state when component unmounts
   useEffect(() => {
-    return () => {
-      done();
-    };
+    if (typeof done === 'function') {
+      return () => {
+        done();
+      };
+    }
   }, [done]);
 
   // Handle message submission
@@ -39,7 +41,9 @@ export default function Home() {
       const response: ReactNode = await sendMessage(input);
       setMessages((messages) => [...messages, response]);
     } finally {
-      done(); // Ensure streaming is properly cleaned up
+      if (typeof done === 'function') {
+        done(); // Ensure streaming is properly cleaned up
+      }
     }
   };
 

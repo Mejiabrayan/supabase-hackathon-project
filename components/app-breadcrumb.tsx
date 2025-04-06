@@ -11,6 +11,11 @@ import {
 import { usePathname } from 'next/navigation';
 import { siteConfig } from '@/config/site';
 
+function truncateText(text: string, maxLength: number = 20): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+}
+
 export function AppBreadCrumb() {
   const pathname = usePathname();
   const currentRoute = siteConfig.find((route) => {
@@ -39,8 +44,8 @@ export function AppBreadCrumb() {
           <>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <span className='font-medium'>
-                {nestedSegment === 'published' ? 'Published' : nestedSegment}
+              <span className='font-medium max-w-[200px] truncate'>
+                {nestedSegment === 'published' ? 'Published' : truncateText(nestedSegment || '')}
               </span>
             </BreadcrumbItem>
           </>

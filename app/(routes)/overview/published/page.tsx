@@ -16,19 +16,18 @@ export default async function PublishedBlogs() {
     <div className="flex-1 overflow-hidden">
       <div className="h-full flex flex-col gap-4 px-4 py-8">
         <div className="w-full max-w-4xl mx-auto">
-          <div className="relative p-8 rounded-lg overflow-hidden mb-8">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm ring-1 ring-white/10" />
-            <div className="relative">
-              <h2 className="text-2xl font-medium bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 mb-2">
-                Published Blog Posts
-              </h2>
-              <p className="text-white/60">
-                View and manage your published articles on Dev.to
-              </p>
+          <div className='flex flex-col gap-6 relative p-4 mt-2 w-full transition-colors bg-gray-100/50 backdrop-blur-xs rounded-xl'>
+            <div className="flex flex-col bg-white overflow-hidden shadow-[0_0_0_1px_rgba(0,0,0,0.08)] rounded-lg">
+              <div className="py-3 px-4 border-b border-neutral-100">
+                <h2 className="text-base text-neutral-700 font-medium">Published Blog Posts</h2>
+                <p className="text-sm text-neutral-500">View and manage your published articles on Dev.to</p>
+              </div>
+
+              <div className="p-4">
+                <BlogList initialBlogs={blogs} error={error?.message || null} />
+              </div>
             </div>
           </div>
-
-          <BlogList initialBlogs={blogs} error={error?.message} />
         </div>
       </div>
     </div>
