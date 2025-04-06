@@ -211,8 +211,6 @@ const sendMessage = async (message: string) => {
 
   if (!user) throw new Error('User not authenticated');
 
-  // Show loading state immediately
-  const loadingMessage = <Message role="assistant" content={<BlogGeneratingState />} />;
   messages.update([
     ...(messages.get() as CoreMessage[]),
     { role: 'user', content: message },
@@ -225,6 +223,7 @@ const sendMessage = async (message: string) => {
   try {
     const { value: stream } = await streamUI({
       model: openai('gpt-4o-mini-2024-07-18'),
+      initial: <Message role="assistant" content={<BlogGeneratingState />} />,
       system: systemPrompt,
       messages: messages.get() as CoreMessage[],
       text: async function* ({ content, done }) {
@@ -244,10 +243,9 @@ const sendMessage = async (message: string) => {
           description: "Generate a SEO friendly blog post based on the user's prompt and automatically publish it to Dev.to",
           parameters: BlogPostSchema,
           generate: async function* (params: BlogPostInput) {
-            const toolCallId = generateId();
-
             try {
               // Step 1: Initial Generation - Save initial status
+              yield <Message role="assistant" content={<BlogGeneratingState />} />;
               await saveGenerationHistory(user.id, message, null, 'pending');
               
               currentBlogPost = {
@@ -255,11 +253,10 @@ const sendMessage = async (message: string) => {
                 status: 'draft',
               };
 
-              // Save initial draft and update status to completed
+              // Step 2: Save draft
               const savedPost = await saveBlogPost(user.id, currentBlogPost);
               await saveGenerationHistory(user.id, message, savedPost.id, 'completed');
-
-              // Return success state with publish button
+              
               return (
                 <Message
                   role="assistant"
