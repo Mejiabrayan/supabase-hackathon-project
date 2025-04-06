@@ -2,8 +2,6 @@
 
 import React from 'react';
 import { MotionConfig, motion, type Transition } from 'framer-motion';
-import { Button } from './ui/button';
-import Link from 'next/link';
 
 const transition: Transition = { type: 'spring', bounce: 0, duration: 0.5 };
 
@@ -75,7 +73,7 @@ function OpenBookIcon() {
   );
 }
 
-export default function EmptyStateUI() {
+export default function EmptyState() {
   const [status, setStatus] = React.useState('idle');
   const isUI = status === 'ui';
 
@@ -108,11 +106,11 @@ export default function EmptyStateUI() {
           animate={{ opacity: 1, y: 0 }}
           className='relative flex h-[calc(100vh-10rem)] md:h-[calc(100vh-20rem)] items-center justify-center'
         >
-          <div className='group relative flex w-full max-w-[620px] flex-col items-center justify-center gap-6 overflow-hidden rounded-md p-14 '>
+          <div className='group relative flex w-full max-w-[620px] flex-col items-center justify-center gap-6 overflow-hidden rounded-md p-14'>
             <div className='flex'>
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className='size-20 relative left-3 flex rotate-[-403deg] items-center justify-center rounded-xl bg-white shadow-[0_1px_1px_0_rgba(0,0,0,0.02),0_4px_8px_0_rgba(0,0,0,0.04)] ring-[0.8px] ring-black/[0.08] transition-transform duration-500 group-hover:-translate-x-5 group:rotate-[-8deg] group-hover:duration-200'
+                className='size-20 relative left-3 flex rotate-[-4deg] items-center justify-center rounded-xl bg-white shadow-[0_1px_1px_0_rgba(0,0,0,0.02),0_4px_8px_0_rgba(0,0,0,0.04)] ring-[0.8px] ring-black/[0.08] transition-transform duration-500 group-hover:-translate-x-5 group:rotate-[-8deg] group-hover:duration-200'
               >
                 <PenIcon />
               </motion.div>

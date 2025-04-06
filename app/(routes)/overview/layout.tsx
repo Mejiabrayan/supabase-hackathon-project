@@ -2,6 +2,8 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { cookies } from 'next/headers';
 import { AppBreadCrumb } from '@/components/app-breadcrumb';
+import { getUser} from '@/app/actions/index'
+import { redirect } from 'next/navigation';
 
 export default async function OverviewLayout({
   children,
@@ -10,6 +12,12 @@ export default async function OverviewLayout({
 }) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
+  const user = await getUser();
+
+
+  if (!user) {
+    redirect('/auth/sign-in');
+  }
 
   return (
     <SidebarProvider

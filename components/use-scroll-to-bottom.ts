@@ -1,29 +1,32 @@
-import { useEffect, useRef, RefObject } from "react";
+import { useEffect, useRef } from 'react';
 
-export function useScrollToBottom<T extends HTMLElement>(): [
-  RefObject<T>,
-  RefObject<T>,
-] {
+export function useScrollToBottom<T extends HTMLElement>() {
   const containerRef = useRef<T>(null);
   const endRef = useRef<T>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    const end = endRef.current;
+    if (!containerRef.current || !endRef.current) return;
 
-    if (container && end) {
-      const observer = new MutationObserver(() => {
-        end.scrollIntoView({ behavior: "smooth" });
-      });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            containerRef.current?.scrollTo({
+              top: containerRef.current.scrollHeight,
+              behavior: 'smooth',
+            });
+          }
+        });
+      },
+      { root: containerRef.current }
+    );
 
-      observer.observe(container, {
-        childList: true,
-        subtree: true,
-      });
+    observer.observe(endRef.current);
 
-      return () => observer.disconnect();
-    }
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
-  return [containerRef, endRef];
+  return [containerRef, endRef] as const;
 }

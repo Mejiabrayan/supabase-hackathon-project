@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -113,15 +112,6 @@
   --sidebar-ring: oklch(0.488 0.243 264.376);
 }
 
-/* 
-@keyframes shimmer {
-  0% {
-    background-position: 0% 0%;
-  }
-  100% {
-    background-position: 200% 0%;
-  }
-} */
 
 @layer base {
   * {
